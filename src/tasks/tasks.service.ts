@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
@@ -13,7 +13,8 @@ export class TasksService {
   ) {}
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
-    return this.taskRepository.save(createTaskDto);
+    const task = this.taskRepository.create(createTaskDto);
+    return this.taskRepository.save(task);
   }
 
   async findAll(): Promise<Task[]> {
@@ -21,19 +22,23 @@ export class TasksService {
   }
 
   async findOne(id: number): Promise<Task> {
-    return this.taskRepository.findOne({
-      where: { id },
-    });
+    try {
+      return await this.taskRepository.findOneOrFail({
+        where: { id },
+      });
+    } catch (error) {
+      throw new NotFoundException(`Task dengan ID ${id} tidak ditemukan.`);
+    }
   }
 
   async update(id: number, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    await this.taskRepository.update(id, updateTaskDto);
-    return this.taskRepository.findOne({
-      where: { id },
-    });
+    const task = await this.findOne(id);
+    Object.assign(task, updateTaskDto);
+    return this.taskRepository.save(task);
   }
 
   async remove(id: number): Promise<void> {
-    await this.taskRepository.delete(id);
+    const task = await this.findOne(id);
+    await this.taskRepository.remove(task);
   }
 }
