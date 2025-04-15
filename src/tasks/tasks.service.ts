@@ -14,27 +14,25 @@ export class TasksService {
 
   async create(createTaskDto: CreateTaskDto): Promise<Task> {
     const task = this.taskRepository.create(createTaskDto);
-    return this.taskRepository.save(task);
+    return await this.taskRepository.save(task);
   }
 
   async findAll(): Promise<Task[]> {
-    return this.taskRepository.find();
+    return await this.taskRepository.find();
   }
 
   async findOne(id: number): Promise<Task> {
-    try {
-      return await this.taskRepository.findOneOrFail({
-        where: { id },
-      });
-    } catch (error) {
+    const task = await this.taskRepository.findOne({ where: { id } });
+    if (!task) {
       throw new NotFoundException(`Task dengan ID ${id} tidak ditemukan.`);
     }
+    return task;
   }
 
   async update(id: number, updateTaskDto: UpdateTaskDto): Promise<Task> {
     const task = await this.findOne(id);
-    Object.assign(task, updateTaskDto);
-    return this.taskRepository.save(task);
+    const updated = Object.assign(task, updateTaskDto);
+    return await this.taskRepository.save(updated);
   }
 
   async remove(id: number): Promise<void> {
